@@ -1,10 +1,8 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: Isaías Dias Machado
-defmodule FzfHelper.Cache.Write do
+defmodule Exhelp.Cache.Write do
   def run() do
-    require IEx; IEx.pry
-    
-    File.mkdir_p(FzfHelper.Config.get_dir_name())
+    File.mkdir_p(Exhelp.Config.get_dir_name())
 
     :code.all_loaded()
     |> Enum.flat_map(&process/1)
@@ -13,7 +11,7 @@ defmodule FzfHelper.Cache.Write do
   end
 
   def write_to_file(data) do
-    File.write!(FzfHelper.Config.get_tags_file_name, data)
+    File.write!(Exhelp.Config.get_tags_file_name, data)
   end
 
   def process({module, _path}) do
@@ -39,10 +37,13 @@ defmodule FzfHelper.Cache.Write do
     docs = Code.fetch_docs(module)
     specs = Code.Typespec.fetch_specs(module)
     callbacks = Code.Typespec.fetch_callbacks(module)
-    File.write!(
-      "#{FzfHelper.Config.get_dir_name()}/#{module_formatted_string}",
-      :erlang.term_to_binary({docs,specs,callbacks})
-    )
+    if !File.exists?(module_formatted_string) do
+      File.write!(
+        "#{Exhelp.Config.get_dir_name()}/#{module_formatted_string}",
+        
+        :erlang.term_to_binary({docs,specs,callbacks})
+      )
+    end
     docs
   end
 

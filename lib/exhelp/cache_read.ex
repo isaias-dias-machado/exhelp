@@ -1,8 +1,18 @@
-defmodule FzfHelper.Cache.Read do
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Isaías Dias Machado
+defmodule Exhelp.Cache.Read do
   def run(call) do
-    parsed_call = parse_call(call)
+    <<help_fun, ?\s, mod_fun::binary>> = call
+    parsed_call = parse_call(mod_fun)
     module_string = parsed_call |> elem(0)
+    
+    case read_docs(module_string) do
+      {:ok, docs} -> process(docs, parsed_call)
+      :enoent -> :enoent
+    end
+  end
 
+  defp process(
     {
       {
         :docs_v1,
@@ -15,42 +25,37 @@ defmodule FzfHelper.Cache.Read do
       },
       {:ok, specs},
       {:ok, _callbacks}
-    } = read_docs(module_string)
+    },
+    parsed_call
+    ) do
+      case parsed_call do
+        {module} ->
+          print_doc([module], [], format, module_doc, metadata)
 
-    case parsed_call do
-      {module} ->
-        print_doc([module], [], format, module_doc, metadata)
+        {_module, function} ->
+          docs
+          |> Enum.filter(&filter_by_function(String.to_atom(function), &1))
+          |> Enum.map(&mod_fun_arity(&1, beam_language, format, specs))
 
-      {_module, function} ->
-        docs
-        |> Enum.filter(&filter_by_function(String.to_atom(function), &1))
-        |> Enum.each(
-          &mod_fun_arity(
-            &1,
-            beam_language,
-            format,
-            specs
+        {_module, function, arity} ->
+          docs
+          |> Enum.filter(
+            &filter_by_function_arity(
+              String.to_atom(function),
+              String.to_integer(arity),
+              &1
+            )
           )
-        )
-
-      {_module, function, arity} ->
-        docs
-        |> Enum.filter(
-          &filter_by_function_arity(
-            String.to_atom(function),
-            String.to_integer(arity),
-            &1
+          |> Enum.map(
+            &mod_fun_arity(
+              &1,
+              beam_language,
+              format,
+              specs
+            )
           )
-        )
-        |> Enum.each(
-          &mod_fun_arity(
-            &1,
-            beam_language,
-            format,
-            specs
-          )
-        )
-    end
+      end
+      |> IO.iodata_to_binary()
   end
 
   def mod_fun_arity(
@@ -165,13 +170,11 @@ defmodule FzfHelper.Cache.Read do
   end
 
   def read_docs(module) when is_binary(module) do
-    file_path = FzfHelper.Config.get_dir_name() <> "/" <> module
-    case File.read(file_path) do
-      {:ok, doc} -> :erlang.binary_to_term(doc)
+    file_path = Exhelp.Config.get_dir_name() <> "/" <> module
 
-      _ -> IO.puts("Module docs not cached, " <>
-      "run '#{FzfHelper.Config.get_executable_name()} fetch'")
-        System.halt(0)
+    case File.read(file_path) do
+      {:ok, doc} -> {:ok, :erlang.binary_to_term(doc)}
+      _ -> :enoent
     end
   end
 end

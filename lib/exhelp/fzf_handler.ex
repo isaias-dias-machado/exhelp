@@ -1,4 +1,6 @@
-defmodule FzfHelper.FzfHandler do
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Isaías Dias Machado
+defmodule Exhelp.FzfHandler do
   def call(fzf_input) do
     fzf_command = System.find_executable("fzf")
 

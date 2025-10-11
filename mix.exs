@@ -25,7 +25,7 @@ defmodule Help.MixProject do
   def application do
     [
       env: [script_name: @script_name],
-      extra_applications: [:logger],
+      extra_applications: [:logger, :ex_unit],
     ]
   end
 
