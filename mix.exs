@@ -1,11 +1,10 @@
 defmodule Help.MixProject do
   use Mix.Project
-
-  @script_name "exh"
+  @script_name System.get_env("EXH_CLI_NAME") || "exh"
 
   def project do
     [
-      app: :help,
+      app: :exhelp,
       version: "0.1.0",
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
@@ -32,7 +31,8 @@ defmodule Help.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      {:phoenix, "~> 1.7"}
     ]
   end
+
 end

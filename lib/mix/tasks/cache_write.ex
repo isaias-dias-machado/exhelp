@@ -1,48 +1,75 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: Isaías Dias Machado
-defmodule FzfHelper.Cache.Write do
+defmodule Mix.Tasks.Cache.Write do
+  require Logger
+
   def run() do
-    require IEx; IEx.pry
-    
-    File.mkdir_p(FzfHelper.Config.get_dir_name())
+    Logger.info("Starting documentation caching...")
+
+    target_dir = FzfHelper.Config.get_dir_name()
+
+    File.mkdir_p(target_dir)
+
+    Logger.info("Caching into: #{target_dir}")
+
+    modules_files_list = :code.all_available()
+
+    Enum.each(modules_files_list, fn {module, _file, _} ->
+      module_string = to_string(module)
+      <<first, _rest::binary>> = module_string
+      atom = String.to_atom(if(first in ?A..?Z, do: "", else: ":")<>module_string)
+      Code.ensure_loaded(atom)
+    end)
 
     :code.all_loaded()
     |> Enum.flat_map(&process/1)
     |> Enum.join("\n")
     |> write_to_file()
+
+    Logger.info(" documentation caching finished.")
   end
 
   def write_to_file(data) do
-    File.write!(FzfHelper.Config.get_tags_file_name, data)
+    File.write!(FzfHelper.Config.get_tags_file_name(), data)
   end
 
+  # TODO: Can be optimized -> load tags to a map and skip the process step if
+  # module is already registered -> add new tags to the map -> replace the
+  # contents of the tags file with the map.
   def process({module, _path}) do
     type = get_module_type(module)
-    module_formated_string =
+
+    module_formatted_string =
       if(type == :elixir, do: "", else: ":") <> Atom.to_string(module)
 
-    docs = cache_module_docs(module, module_formated_string)
+    docs = cache_module_docs(module, module_formatted_string)
+
     with :docs_v1 <- docs |> elem(0),
          true <- function_exported?(module, :module_info, 1) do
-
-      funs = get_definitions(module, type, module_formated_string)
-      callbacks = get_callbacks(module, module_formated_string)
+      funs = get_definitions(module, type, module_formatted_string)
+      callbacks = get_callbacks(module, module_formatted_string)
       info = funs ++ callbacks
 
-      ["h " <> module_formated_string | info]
+      ["h " <> module_formatted_string | info]
     else
       _ -> []
     end
   end
 
-  def cache_module_docs(module,module_formatted_string) do
+  def cache_module_docs(module, module_formatted_string) do
+    filepath =
+      "#{FzfHelper.Config.get_dir_name()}/#{module_formatted_string}"
+
     docs = Code.fetch_docs(module)
     specs = Code.Typespec.fetch_specs(module)
     callbacks = Code.Typespec.fetch_callbacks(module)
-    File.write!(
-      "#{FzfHelper.Config.get_dir_name()}/#{module_formatted_string}",
-      :erlang.term_to_binary({docs,specs,callbacks})
-    )
+    if !File.exists?(filepath) do
+      File.write!(
+        filepath,
+        :erlang.term_to_binary({docs, specs, callbacks})
+      )
+    end
+
     docs
   end
 
@@ -104,10 +131,11 @@ defmodule FzfHelper.Cache.Write do
     else
       {
         new_seen,
-        [format_entry(fun_atom, arity, module_string, help_fun) | list],
+        [format_entry(fun_atom, arity, module_string, help_fun) | list]
       }
     end
   end
+
   def format_entry(fun, arity, module_string, help_fun) do
     "#{help_fun} #{module_string}.#{fun}/#{arity}"
   end

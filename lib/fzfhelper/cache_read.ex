@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Isaías Dias Machado
 defmodule FzfHelper.Cache.Read do
   def run(call) do
     parsed_call = parse_call(call)
@@ -14,7 +16,7 @@ defmodule FzfHelper.Cache.Read do
         docs
       },
       {:ok, specs},
-      {:ok, _callbacks}
+      {:ok, callbacks}
     } = read_docs(module_string)
 
     case parsed_call do
@@ -29,7 +31,8 @@ defmodule FzfHelper.Cache.Read do
             &1,
             beam_language,
             format,
-            specs
+            specs,
+            callbacks
           )
         )
 
@@ -47,7 +50,8 @@ defmodule FzfHelper.Cache.Read do
             &1,
             beam_language,
             format,
-            specs
+            specs,
+            callbacks
           )
         )
     end
@@ -57,9 +61,10 @@ defmodule FzfHelper.Cache.Read do
         {{kind, fun, arity}, _line, headings, body, metadata},
         language,
         format,
-        specs
+        specs,
+        callbacks
       ) do
-    spec = get_spec(specs, fun, arity)
+    spec = get_spec(specs, callbacks, fun, arity)
 
     print_doc(
       format_headings(language, kind, headings),
@@ -86,7 +91,7 @@ defmodule FzfHelper.Cache.Read do
 
   defp print_doc(headings, types, format, doc, metadata) do
     doc = translate_doc(doc) || ""
-    opts = IEx.Config.ansi_docs()
+    opts = [ansi: :ansi_enabled]
     IO.ANSI.Docs.print_headings(headings, opts)
     IO.write(types)
     IO.ANSI.Docs.print_metadata(metadata, opts)
@@ -104,8 +109,22 @@ defmodule FzfHelper.Cache.Read do
 
   defp format_headings(_, _, heading), do: heading
 
-  defp get_spec(all_specs, fun_name, arity) do
-    {_, specs} = List.keyfind(all_specs, {fun_name, arity}, 0)
+  defp get_spec(all_specs, all_callbacks, fun_name, arity) do
+    specs =
+      case List.keyfind(all_specs, {fun_name, arity}, 0) do
+        {_, specs} ->
+          specs
+
+        _ ->
+          case List.keyfind(all_callbacks, {fun_name, arity}, 0) do
+            {_, specs} ->
+              specs
+
+            _ ->
+              IO.puts(IO.ANSI.red() <> "No documentation found for this function")
+              System.halt(1)
+          end
+      end
 
     formatted =
       Enum.map(specs, fn spec ->
@@ -117,9 +136,11 @@ defmodule FzfHelper.Cache.Read do
   end
 
   def format_typespec(definition, kind, nesting) do
+    {:ok, column_num} = :io.columns()
+
     {:@, [], [{kind, [], [definition]}]}
     |> Code.quoted_to_algebra()
-    |> Inspect.Algebra.format(IEx.Config.width())
+    |> Inspect.Algebra.format(column_num)
     |> IO.iodata_to_binary()
     |> color_prefix_with_line()
     |> indent(nesting)
@@ -136,7 +157,7 @@ defmodule FzfHelper.Cache.Read do
 
   defp color_prefix_with_line(string) do
     [left, right] = :binary.split(string, " ")
-    IEx.color(:doc_inline_code, left) <> " " <> right
+    IO.ANSI.cyan() <> left <> " " <> right
   end
 
   def parse_call(call) do
@@ -166,11 +187,17 @@ defmodule FzfHelper.Cache.Read do
 
   def read_docs(module) when is_binary(module) do
     file_path = FzfHelper.Config.get_dir_name() <> "/" <> module
-    case File.read(file_path) do
-      {:ok, doc} -> :erlang.binary_to_term(doc)
 
-      _ -> IO.puts("Module docs not cached, " <>
-      "run '#{FzfHelper.Config.get_executable_name()} fetch'")
+    case File.read(file_path) do
+      {:ok, doc} ->
+        :erlang.binary_to_term(doc)
+
+      _ ->
+        IO.puts(
+          "Module docs not cached, " <>
+            "run '#{System.argv() |> List.first()} fetch'"
+        )
+
         System.halt(0)
     end
   end
