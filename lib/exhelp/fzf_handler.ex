@@ -9,20 +9,19 @@ defmodule Exhelp.FzfHandler do
       System.stop(0)
     end
 
-    fzf = Port.open({:spawn_executable, fzf_command}, [:in, :out, :binary, :exit_status])
-    Port.command(fzf, fzf_input)
+    old_gl = Exhelp.GL.capture()
+    port = Port.open({:spawn_executable, fzf_command}, [:binary, :exit_status])
+    Port.command(port, fzf_input)
 
-    handle_msgs(fzf)
-  end
-
-  def handle_msgs(port) do
     receive do
       {^port, {:exit_status, _}} ->
         receive do
           {^port, {:data, data}} ->
             data
         after
-          0 -> nil
+          0 ->
+            Exhelp.GL.restore(old_gl)
+            nil
         end
 
       {^port, {:data, data}} ->
@@ -31,6 +30,7 @@ defmodule Exhelp.FzfHandler do
         after
           0 -> nil
         end
+        Exhelp.GL.restore(old_gl)
         data
     end
   end

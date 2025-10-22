@@ -19,7 +19,7 @@ defmodule Exhelp.Cache.Write do
     module_formated_string =
       if(type == :elixir, do: "", else: ":") <> Atom.to_string(module)
 
-    docs = cache_module_docs(module, module_formated_string)
+    docs = Code.fetch_docs(module)
     with :docs_v1 <- docs |> elem(0),
          true <- function_exported?(module, :module_info, 1) do
 
@@ -31,20 +31,6 @@ defmodule Exhelp.Cache.Write do
     else
       _ -> []
     end
-  end
-
-  def cache_module_docs(module,module_formatted_string) do
-    docs = Code.fetch_docs(module)
-    specs = Code.Typespec.fetch_specs(module)
-    callbacks = Code.Typespec.fetch_callbacks(module)
-    if !File.exists?(module_formatted_string) do
-      File.write!(
-        "#{Exhelp.Config.get_dir_name()}/#{module_formatted_string}",
-        
-        :erlang.term_to_binary({docs,specs,callbacks})
-      )
-    end
-    docs
   end
 
   def format_module_name(module_string, :erlang) do

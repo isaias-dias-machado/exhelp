@@ -28,7 +28,6 @@ defmodule Exhelp do
   end
 
   defp handle_fzf(nil), do: :exit
-
   defp handle_fzf(data) do
     {help_fun, call} =
       data
@@ -39,15 +38,5 @@ defmodule Exhelp do
       apply(IEx.Introspection, help_fun, [call])
     end)
     |> Exhelp.LessHandler.call()
-    # |> Exhelp.NameParser.
-    # |> Exhelp.Cache.Read.run()
-    # |> handle_cache_read()
-  end
-
-  defp handle_cache_read({:ok, docs}), do: docs |> Exhelp.LessHandler.call()
-
-  defp handle_cache_read(:enoent) do
-    IO.puts("Module not found in cached docs")
-    IO.puts("Try running 'exh fetch'")
   end
 end

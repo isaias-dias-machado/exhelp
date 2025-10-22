@@ -1,2 +1,0 @@
-{:io_request, #PID<0.101.0>, #Reference<0.3017590683.1034682371.90193>, {:setopts, [expand_fun: &IEx.Autocomplete.expand/1]}}
-IO String:

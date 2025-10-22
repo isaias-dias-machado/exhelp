@@ -1,3 +1,0 @@
-- Integration with mix
-- add file to .gitignore
-- callbacks
