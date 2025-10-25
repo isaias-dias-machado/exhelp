@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: Isaías Dias Machado
-defmodule FzfHelper.Config do
+defmodule ExHelp.Config do
   @dir_name (
     System.get_env("EXH_CACHE_DIR") || "~/.cache/exh"
     |> Path.expand()

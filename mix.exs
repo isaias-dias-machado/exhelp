@@ -15,7 +15,7 @@ defmodule Help.MixProject do
 
   def script do
     [
-      main_module: FzfHelper.Cli,
+      main_module: ExHelp.Cli,
       name: @script_name
     ]
   end
@@ -31,7 +31,6 @@ defmodule Help.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:phoenix, "~> 1.7"}
     ]
   end
 

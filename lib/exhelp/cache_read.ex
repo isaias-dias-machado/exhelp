@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: Isaías Dias Machado
-defmodule FzfHelper.Cache.Read do
+defmodule ExHelp.Cache.Read do
   def run(call) do
     parsed_call = parse_call(call)
     module_string = parsed_call |> elem(0)
@@ -186,7 +186,7 @@ defmodule FzfHelper.Cache.Read do
   end
 
   def read_docs(module) when is_binary(module) do
-    file_path = FzfHelper.Config.get_dir_name() <> "/" <> module
+    file_path = ExHelp.Config.get_dir_name() <> "/" <> module
 
     case File.read(file_path) do
       {:ok, doc} ->

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: Isaías Dias Machado
-defmodule FzfHelper.Cli do
+defmodule ExHelp.Cli do
   def get_cli_help() do
     """
       usage:
@@ -26,12 +26,12 @@ defmodule FzfHelper.Cli do
         System.halt()
 
       {[clear: true], _, []} ->
-        dir = FzfHelper.Config.get_dir_name()
+        dir = ExHelp.Config.get_dir_name()
         IO.puts("Clearing cache from #{dir}")
         File.rm_rf(dir)
 
       {_, [_help_fun, call], []} ->
-        FzfHelper.Cache.Read.run(call)
+        ExHelp.Cache.Read.run(call)
 
       {_, _, _} ->
         IO.puts(get_cli_help())

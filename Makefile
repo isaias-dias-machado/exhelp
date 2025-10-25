@@ -1,59 +1,58 @@
 SRCS := $(shell find lib -type f)
-CONFIGS := cli-configs.env
-
-include cli-configs.env
-export
-
-CWD := $(shell pwd)
-
-MIX := mix
-APP_NAME := exh
-
-compile: bin/$(APP_NAME).sh
-
-bin/$(APP_NAME).sh: bin/$(APP_NAME)
-	@echo "				 Build target"
-	@echo "Compiling bash wrapper template executable..."
-	@sed "s,{{BUILD_PATH}},$(CWD),g" lib/wrapper.sh.in > bin/$(APP_NAME).sh
-	@sed -i "s,{{CACHE_DIR}},$(EXH_CACHE_DIR),g" bin/$(APP_NAME).sh
-	@sed -i "s,{{TAGS_FILE}},$(EXH_TAGS_FILE),g" bin/$(APP_NAME).sh
-	@chmod 0755 bin/$(APP_NAME).sh
-	@echo "Building and installing mix archive..."
-	@mix archive.build
-	@mix archive.install --force
-	@echo "Creating cache directory..."
-	@mkdir -p $$EXH_CACHE_DIR
-	@echo "Done"
-
-bin/$(APP_NAME): mix.exs $(SRCS) $(CONFIGS) 
-	mix escript.build
-	@mv $(APP_NAME) bin/$(APP_NAME)
+WRAPPER := bin/exh.sh
+BINARY := bin/exh
+WRAPPER_IN := priv/wrapper.sh.in
 
 PREFIX ?= /usr/local
 BINDIR := $(PREFIX)/bin
-EXECUTABLE_PATH := $(BINDIR)/$(APP_NAME)
+LIBEXECDIR := $(PREFIX)/libexec
 
-install: bin/$(APP_NAME)
-	@echo "				Install target"
-	@echo "Installing executable..."
-	@install -m 0755 bin/$(APP_NAME).sh $(EXECUTABLE_PATH)
-	@echo "Done"
-
-uninstall:
-	@echo "				Uninstall target"
-	@echo "Removing exhelp executable"
-	@rm -rf $(EXECUTABLE_PATH)
-	@echo "Done"
-
-clean:
-	@echo "				Clean target"
-	@rm -rf bin/*
-	@echo "Uninstaling exhelp mix archive"
-	@mix archive.uninstall exhelp -y &2>1 >/dev/null
-	@echo "Removing exhelp cache directory"
-	@rm -rf $$EXH_CACHE_DIR
-	@echo "Done"
+INSTALLED_WRAPPER := $(BINDIR)/exh
+INSTALLED_BINARY := $(LIBEXECDIR)/exh
 
 help:
 	@echo "Run 'make compile' followed by 'sudo make install' to install"
 	@echo "To uninstall run 'sudo make uninstall'"
+
+compile: bin $(WRAPPER) $(BINARY)
+
+bin:
+	mkdir -p bin
+
+$(WRAPPER): $(WRAPPER_IN)
+	@echo "Compiling bash script dev wrapper..."
+	@sed "s,{{EXEC_DIR}},$(CURDIR),g" $(WRAPPER_IN) > $(WRAPPER)
+	@chmod +x $(WRAPPER)
+
+$(BINARY): mix.exs $(SRCS)
+	@echo "Compiling escript..."
+	@mix escript.build
+	@echo "Building and installing mix archive..."
+	@mix archive.install --force
+	@rm -f exhelp-*
+	@mv exh bin
+
+install:
+	@if [ ! -f $(BINARY) ]; then \
+		echo "Error: Run 'make compile' first (without sudo)"; \
+		exit 1; \
+	fi
+	@echo "Installing cli binary..."
+	@install -d $(DESTDIR)$(BINDIR)
+	@install -d $(DESTDIR)$(LIBEXECDIR)
+	@echo "Compiling and installing cli wrapper..."
+	@sed 's,{{EXECUTABLE}},$(INSTALLED_BINARY),g' $(WRAPPER_IN) | \
+		install -m 755 /dev/stdin $(DESTDIR)$(INSTALLED_WRAPPER)
+	@install -m 755 $(BINARY) $(DESTDIR)$(INSTALLED_BINARY)
+
+uninstall:
+	@echo "Removing exhelp executables..."
+	@rm -f $(DESTDIR)$(INSTALLED_WRAPPER)
+	@rm -f $(DESTDIR)$(INSTALLED_BINARY)
+
+clean:
+	@rm -rf bin/*
+	@echo "Uninstaling exhelp mix archive..."
+	@mix archive.uninstall exhelp --force 2>/dev/null || true
+
+.PHONY: help compile install uninstall clean

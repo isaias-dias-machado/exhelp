@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Isaías Dias Machado
+
+exh={{EXECUTABLE}}
+tags=$HOME/.cache/exh/tags
+
+if [ $# -eq 0 ]; then
+	if [ ! -f "${tags}" ]; then
+		echo "No tags file. Run 'exh fetch'"
+		exit 0
+	fi
+
+	selected="$(cat "${tags}" | fzf)"
+	if [ -n "$selected" ]; then
+		if [ -n "$PAGER" ]; then
+				"${exh}" $selected | $PAGER
+		else
+				"${exh}" $selected | less -R
+		fi
+	fi
+elif [ "$1" = "fetch" ]; then
+	mix docs.cache
+elif [ "$1" = "clear" ]; then
+	"${exh}" --clear
+else
+	"${exh}" --help
+fi

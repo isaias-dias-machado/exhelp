@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Isaías Dias Machado
 defmodule Mix.Tasks.Docs.Cache do
   use Mix.Task
 
@@ -32,8 +34,11 @@ defmodule Mix.Tasks.Docs.Cache do
       Code.ensure_loaded(atom)
     end)
 
+    modules_set = get_set_from_existing_tags()
+
     :code.all_loaded()
-    |> Enum.flat_map(&process/1)
+    |> Enum.reduce(modules_set, &process/2)
+    |> MapSet.to_list()
     |> Enum.join("\n")
     |> write_to_file()
 
@@ -45,31 +50,41 @@ defmodule Mix.Tasks.Docs.Cache do
     File.write!("#{@dir}/#{@tags}", data)
   end
 
-  # TODO: Can be optimized -> load tags to a map and skip the process step if
-  # module in map -> add new tags to the map -> replace the
-  # contents of the tags file with the ones in the map.
-  def process({module, _path}) do
+  def process({module, _path}, modules_set) do
     type = get_module_type(module)
 
     module_formatted_string =
       if(type == :elixir, do: "", else: ":") <> Atom.to_string(module)
 
-    docs = cache_module_docs(module, module_formatted_string)
-
-    with :docs_v1 <- docs |> elem(0),
-         true <- function_exported?(module, :module_info, 1) do
-      funs = get_definitions(module, type, module_formatted_string)
-      callbacks = get_callbacks(module, module_formatted_string)
-      info = funs ++ callbacks
-
-      ["h " <> module_formatted_string | info]
+    if MapSet.member?(modules_set, "h #{module_formatted_string}") do
+      modules_set
     else
-      _ -> []
+      docs = cache_module_docs(module, module_formatted_string)
+
+      with :docs_v1 <- docs |> elem(0),
+           true <- function_exported?(module, :module_info, 1) do
+        funs = get_definitions(module, type, module_formatted_string)
+        callbacks = get_callbacks(module, module_formatted_string)
+
+        modules_set
+        |> MapSet.put("h " <> module_formatted_string)
+        |> MapSet.union(MapSet.new(funs))
+        |> MapSet.union(MapSet.new(callbacks))
+      else
+        _ -> modules_set
+      end
     end
   end
 
-  def get_map_from_existing_tags() do
-    
+  def get_set_from_existing_tags() do
+    filename = "#{@dir}/#{@tags}"
+    case File.read(filename) do
+      {:ok, content} -> 
+        entries = String.split(content, "\n")
+        MapSet.new(entries)
+
+      _ -> MapSet.new()
+    end
   end
 
   def cache_module_docs(module, module_formatted_string) do

@@ -6,7 +6,7 @@ defmodule Mix.Tasks.Cache.Write do
   def run() do
     Logger.info("Starting documentation caching...")
 
-    target_dir = FzfHelper.Config.get_dir_name()
+    target_dir = ExHelp.Config.get_dir_name()
 
     File.mkdir_p(target_dir)
 
@@ -30,7 +30,7 @@ defmodule Mix.Tasks.Cache.Write do
   end
 
   def write_to_file(data) do
-    File.write!(FzfHelper.Config.get_tags_file_name(), data)
+    File.write!(ExHelp.Config.get_tags_file_name(), data)
   end
 
   # TODO: Can be optimized -> load tags to a map and skip the process step if
@@ -58,7 +58,7 @@ defmodule Mix.Tasks.Cache.Write do
 
   def cache_module_docs(module, module_formatted_string) do
     filepath =
-      "#{FzfHelper.Config.get_dir_name()}/#{module_formatted_string}"
+      "#{ExHelp.Config.get_dir_name()}/#{module_formatted_string}"
 
     docs = Code.fetch_docs(module)
     specs = Code.Typespec.fetch_specs(module)
