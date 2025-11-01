@@ -170,5 +170,4 @@ defmodule Mix.Tasks.Docs.Cache do
   def format_entry(fun, arity, module_string, help_fun) do
     "#{help_fun} #{module_string}.#{fun}/#{arity}"
   end
-  
 end
