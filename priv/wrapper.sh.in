@@ -6,24 +6,41 @@
 exh={{EXECUTABLE}}
 tags=$HOME/.cache/exh/tags
 
-if [ $# -eq 0 ]; then
-	if [ ! -f "${tags}" ]; then
-		echo "No tags file. Run 'exh fetch'"
-		exit 0
-	fi
-
-	selected="$(cat "${tags}" | fzf)"
-	if [ -n "$selected" ]; then
-		if [ -n "$PAGER" ]; then
-				"${exh}" $selected | $PAGER
-		else
-				"${exh}" $selected | less -R
+call_fzf() {
+		if [ ! -f "${tags}" ]; then
+			echo "No tags file. Run 'exh fetch'"
+			exit 0
 		fi
-	fi
-elif [ "$1" = "fetch" ]; then
-	mix docs.cache
-elif [ "$1" = "clear" ]; then
-	"${exh}" --clear
-else
-	"${exh}" --help
-fi
+
+		selected="$(cat "${tags}" | fzf)"
+		if [ -n "$selected" ]; then
+			if [ -n "$PAGER" ]; then
+					"${exh}" $selected | $PAGER
+			else
+					"${exh}" $selected | less -R
+			fi
+		fi
+}
+
+case "${1:-}" in
+	"")
+		call_fzf
+		;;
+
+	fetch)
+		if [ "$2" = "--prune" ]; then
+			mix docs.cache prune
+		else
+			mix docs.cache
+		fi
+		;;
+
+	clear)
+		"${exh}" --clear
+		;;
+
+	*)
+		"${exh}" --help
+		;;
+esac
+

@@ -121,8 +121,7 @@ defmodule ExHelp.Cache.Read do
               specs
 
             _ ->
-              IO.puts(IO.ANSI.red() <> "No documentation found for this function")
-              System.halt(1)
+              []
           end
       end
 
@@ -186,17 +185,14 @@ defmodule ExHelp.Cache.Read do
   end
 
   def read_docs(module) when is_binary(module) do
-    file_path = ExHelp.Config.get_dir_name() <> "/" <> module
+    file_path = ExHelp.Config.get_docs_dir() <> "/" <> module
 
     case File.read(file_path) do
       {:ok, doc} ->
         :erlang.binary_to_term(doc)
 
       _ ->
-        IO.puts(
-          "Module docs not cached, " <>
-            "run '#{System.argv() |> List.first()} fetch'"
-        )
+        IO.write(IO.ANSI.red() <> "Module not found in cache.")
 
         System.halt(0)
     end

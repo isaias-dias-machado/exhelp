@@ -4,13 +4,19 @@ defmodule ExHelp.Cli do
   def get_cli_help() do
     """
       usage:
-        exh [fetch | clear]
+        exh
+        exh <fetch> [--sync]
+        exh <clear>
 
       No arguments invocation calls fzf to browse cached documents.
 
-      Run with 'fetch' to cache you loaded modules first.
+      Run 'fetch' to cache you loaded modules first.
 
-      Run with 'clear' to clear the cache files.
+      --sync   Syncronizes the cache with the current context. Warning: 
+      --prune  Syncronizes and prunes modules from cache that are not found in
+      the current context.
+
+      Run 'clear' to clear the cache files.
     """
   end
 

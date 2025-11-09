@@ -16,7 +16,14 @@ defmodule ExHelp.Config do
     Path.join(@dir_name, checksums_dir)
   )
 
+  @docs_dir (
+    checksums_dir = System.get_env("EXH_CHECKSUMS_DIR") || "docs"
+    Path.join(@dir_name, checksums_dir)
+  )
+
   def get_dir_name, do: @dir_name
+
+  def get_docs_dir, do: @docs_dir
 
   def get_tags_file_name, do: @tags_file
   def get_checksums_dir, do: @checksums_dir
