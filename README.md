@@ -41,6 +41,8 @@ make uninstall PREFIX=~/.local  # for user-local install
 Navigate to your Mix project's directory and run fetch to cache your docs:
 ```sh
 exh fetch
+# or
+exh fetch --prune # Deletes modules not present in the current context/project 
 ```
 Run the CLI with no arguments to trigger `fzf`:
 ```sh
